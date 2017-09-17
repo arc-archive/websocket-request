@@ -20,6 +20,7 @@ the License.
 <link rel="import" href="../paper-progress/paper-progress.html">
 <link rel="import" href="../paper-tabs/paper-tabs.html">
 <link rel="import" href="../paper-tabs/paper-tab.html">
+<link rel="import" href="../paper-toast/paper-toast.html">
 <link rel="import" href="../iron-pages/iron-pages.html">
 <link rel="import" href="../file-drop/file-drop.html">
 <link rel="import" href="../paper-autocomplete/paper-autocomplete.html">
@@ -272,7 +273,9 @@ Custom property | Description | Default
         type: Boolean,
         value: false,
         computed: '_computeButtonVisible(message)'
-      }
+      },
+      // True if URL suggestions are opened
+      suggesionsOpened: Boolean
     },
 
     ready: function() {
