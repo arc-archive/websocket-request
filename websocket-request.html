@@ -252,10 +252,12 @@ the License.
    * @customElement
    * @polymer
    * @demo demo/index.html
-   * @memberof UiElements
+   * @memberof ApiElements
    */
   class WebsocketRequest extends Polymer.Element {
-    static get is() { return 'websocket-request'; }
+    static get is() {
+      return 'websocket-request';
+    }
     static get properties() {
       return {
         /**
@@ -345,7 +347,7 @@ the License.
 
     connectedCallback() {
       super.connectedCallback();
-      Polymer.RenderStatus.afterNextRender(this, function() {
+      Polymer.RenderStatus.afterNextRender(this, () => {
         const input = this.shadowRoot.querySelector('#socketUrl');
         this._setUrlInput(input);
       });
@@ -365,9 +367,11 @@ the License.
     }
     /**
      * Handler for the `<web-socket>` error event.
+     *
+     * @param {CustomEvent} e
      */
     _onError(e) {
-      console.error(e.detail.error);
+      console.warn(e.detail.error);
       this._setConnecting(false);
       this.$.error.text = e.detail.error.message || 'Unknown error occured';
       this.$.error.opened = true;
@@ -385,7 +389,7 @@ the License.
     }
     // Connects on enter.
     _urlKeyDown(e) {
-      if (e.keyCode === 13) {
+      if (e.key === 'Enter' || e.keyCode === 13) {
         this.connect();
       }
     }
@@ -486,6 +490,8 @@ the License.
     /**
      * Sends the message to the server when the user pressed ctrl + enter
      * while typing in the input.
+     *
+     * @param {KeyboardEvent} e
      */
     _messageKeydown(e) {
       if (e.keyCode === 13 && e.ctrlKey) {
@@ -550,6 +556,8 @@ the License.
     }
     /**
      * Message received handler.
+     *
+     * @param {CustomEvent} e
      */
     _messageReceived(e) {
       const message = new WebSocketMessage({

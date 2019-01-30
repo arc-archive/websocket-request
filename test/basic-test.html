@@ -54,6 +54,109 @@
         assert.isTrue(node.disabled);
       });
     });
+
+    suite('_onDisconnected()', () => {
+      let element;
+      let ev;
+      setup(function() {
+        element = fixture('basic');
+        ev = new CustomEvent('test', {cancelable: true});
+      });
+
+      test('Stops the event', () => {
+        const spy = sinon.spy(ev, 'stopPropagation');
+        element._onDisconnected(ev);
+        assert.isTrue(spy.called);
+      });
+
+      test('Resets connecting state', () => {
+        element._setConnecting(true);
+        element._onDisconnected(ev);
+        assert.isFalse(element.connected);
+      });
+
+      test('Resets connected state', () => {
+        element._setConnected(true);
+        element._onDisconnected(ev);
+        assert.isFalse(element.connected);
+      });
+    });
+
+    suite('_onConnected()', () => {
+      let element;
+      let ev;
+      setup(function() {
+        element = fixture('basic');
+        ev = new CustomEvent('test', {cancelable: true});
+      });
+
+      test('Stops the event', () => {
+        const spy = sinon.spy(ev, 'stopPropagation');
+        element._onConnected(ev);
+        assert.isTrue(spy.called);
+      });
+
+      test('Resets connecting state', () => {
+        element._setConnecting(true);
+        element._onConnected(ev);
+        assert.isFalse(element.connecting);
+      });
+
+      test('Sets connected state', () => {
+        element._setConnected(false);
+        element._onConnected(ev);
+        assert.isTrue(element.connected);
+      });
+    });
+
+    suite('_urlKeyDown()', () => {
+      let element;
+      let ev;
+      setup(function(done) {
+        element = fixture('basic');
+        ev = new CustomEvent('keydown');
+        flush(() => done());
+      });
+
+      test('Calls connect() when keyCode is 13', () => {
+        const spy = sinon.spy(element, 'connect');
+        ev.keyCode = 13;
+        element._urlKeyDown(ev);
+        assert.isTrue(spy.called);
+      });
+
+      test('Calls connect() when key is Enter', () => {
+        const spy = sinon.spy(element, 'connect');
+        ev.key = 'Enter';
+        element._urlKeyDown(ev);
+        assert.isTrue(spy.called);
+      });
+
+      test('Does nothing for other types', () => {
+        const spy = sinon.spy(element, 'connect');
+        ev.key = 'E';
+        element._urlKeyDown(ev);
+        assert.isFalse(spy.called);
+      });
+    });
+
+    suite('_onError()', () => {
+      let element;
+      let ev;
+      setup(function(done) {
+        element = fixture('basic');
+        ev = new CustomEvent('error', {
+          detail: {}
+        });
+        flush(() => done());
+      });
+
+      test('Resets connecting state', () => {
+        element._setConnecting(true);
+        element._onError(ev);
+        assert.isFalse(element.connected);
+      });
+    });
     </script>
 
   </body>
