@@ -155,7 +155,6 @@ the License.
        *
        * @type {String|ArrayBuffer|Blob}
        */
-      this._message = undefined;
       this.message = opts.message;
       /**
        * A direction of the message. Either "in" or "out".
@@ -168,12 +167,7 @@ the License.
        *
        * @type {Date}
        */
-      this._time = undefined;
-      if (opts.time) {
-        this.time = opts.time;
-      } else {
-        this.time = new Date();
-      }
+      this.time = opts.time;
     }
 
     set message(msg) {
@@ -352,14 +346,19 @@ the License.
         this._setUrlInput(input);
       });
     }
-
-    // Called when the socket has been disconnected
+    /**
+     * Called when the socket has been disconnected
+     * @param {CustomEvent} e
+     */
     _onDisconnected(e) {
       e.stopPropagation();
       this._setConnecting(false);
       this._setConnected(false);
     }
-    // Called when tghe socket has been connected.
+    /**
+     * Called when tghe socket has been connected.
+     * @param {CustomEvent} e
+     */
     _onConnected(e) {
       e.stopPropagation();
       this._setConnecting(false);
@@ -406,17 +405,9 @@ the License.
         return;
       }
       this._setConnecting(true);
-      this.$.socket.open();
-      this.dispatchEvent(new CustomEvent('send-analytics', {
-        detail: {
-          type: 'event',
-          category: 'Web sockets',
-          action: 'Connect to socket'
-        },
-        composed: true,
-        bubbles: true
-      }));
+      this._dispatchGaEvent('Connect to socket');
       this._updateUrlHistory(url);
+      this.$.socket.open();
     }
     /**
      * Disconnects from the remote machine.
@@ -424,57 +415,117 @@ the License.
     disconnect() {
       this.$.socket.close();
     }
-    // Updates the URL object in the history datastore.
-    _updateUrlHistory(url) {
-      const ev = new CustomEvent('websocket-url-history-read', {
+    /**
+     * Dispatches a CustomEvent of a `type` with `detail` object.
+     * @param {String} type Event type
+     * @param {Object} detail Object to attach to the event
+     * @return {CustomEvent}
+     */
+    _dispatch(type, detail) {
+      const e = new CustomEvent(type, {
         composed: true,
         bubbles: true,
         cancelable: true,
-        detail: {
-          url: url
-        }
+        detail
       });
-      this.dispatchEvent(ev);
-      return ev.detail.result
-      .then((doc) => {
-        if (!doc) {
-          doc = {
-            _id: url,
-            cnt: 1,
-            time: Date.now()
-          };
-        } else {
-          doc.cnt++;
-          doc.time = Date.now();
-        }
-        const ev = new CustomEvent('websocket-url-history-changed', {
-          composed: true,
-          bubbles: true,
-          cancelable: true,
-          detail: {
-            item: doc
-          }
-        });
-        this.dispatchEvent(ev);
-        return ev.detail.result;
+      this.dispatchEvent(e);
+      return e;
+    }
+    /**
+     * Dispatches `websocket-url-history-read` event
+     * @param {String} url History object ID.
+     * @return {CustomEvent}
+     */
+    _dispatchReadHistory(url) {
+      return this._dispatch('websocket-url-history-read', {
+        url
       });
     }
-    // Queries for the list of history URLs for autocomplete function.
-    _queryUrlHistory(e) {
-      const value = e.detail.value;
-      const ev = new CustomEvent('websocket-url-history-query', {
-        composed: true,
-        bubbles: true,
-        cancelable: true,
-        detail: {
-          q: value
-        }
+    /**
+     * Dispatches `websocket-url-history-read` event
+     * @param {Object} item History object to update.
+     * @return {CustomEvent}
+     */
+    _dispatchUpdateHistory(item) {
+      return this._dispatch('websocket-url-history-changed', {
+        item
       });
-      this.dispatchEvent(ev);
-      if (!ev.detail.result) {
-        throw new Error('Query not handled');
+    }
+    /**
+     * Dispatches `websocket-url-history-read` event
+     * @param {String} q Value for query event (an URL).
+     * @return {CustomEvent}
+     */
+    _dispatchQueryHistory(q) {
+      return this._dispatch('websocket-url-history-query', {
+        q
+      });
+    }
+    /**
+     * Dispatches GA event.
+     * The event's category is `Web sockets`.
+     * @param {String} action Event action.
+     * @return {CustomEvent}
+     */
+    _dispatchGaEvent(action) {
+      return this._dispatch('send-analytics', {
+        type: 'event',
+        category: 'Web sockets',
+        action
+      });
+    }
+    /**
+     * Updates the URL object in the history datastore.
+     * @param {String} url An URL to store
+     * @return {Promise}
+     */
+    _updateUrlHistory(url) {
+      const e = this._dispatchReadHistory(url);
+      if (!e.detail.result) {
+        console.warn('Websocket model not found');
+        return;
       }
-      ev.detail.result
+      return e.detail.result
+      .then((doc) => this._processUrlHistoryUpdateResponse(doc, url));
+    }
+    /**
+     * Processes datastore response about the URL. If exists it updates
+     * the object or creates new otherwise.
+     * @param {Object} doc Retreived from the data store object. Can be not set if the object do not exists.
+     * @param {String} url Request URL to store.
+     * @return {Promise}
+     */
+    _processUrlHistoryUpdateResponse(doc, url) {
+      if (!doc) {
+        doc = {
+          _id: url,
+          cnt: 1,
+          time: Date.now()
+        };
+      } else {
+        doc.cnt++;
+        doc.time = Date.now();
+      }
+      const e = this._dispatchUpdateHistory(doc);
+      if (!e.detail.result) {
+        console.warn('Websocket model not found');
+        return Promise.resolve();
+      }
+      return e.detail.result;
+    }
+    /**
+     * Queries for the list of history URLs for autocomplete function.
+     * @param {CustomEvent} e Suggestion request event from autocomplete
+     * @return {Promise}
+     */
+    _queryUrlHistory(e) {
+      const {value} = e.detail;
+      const ev = this._dispatchQueryHistory(value);
+      if (!ev.detail.result) {
+        console.warn('Websocket model not found');
+        return Promise.resolve();
+      }
+      return ev.detail.result
       .then((data) => {
         const suggestions = data.map((item) => item._id);
         this.$.autocomplete.source = suggestions;
@@ -494,7 +545,7 @@ the License.
      * @param {KeyboardEvent} e
      */
     _messageKeydown(e) {
-      if (e.keyCode === 13 && e.ctrlKey) {
+      if ((e.key === 'Enter' || e.keyCode === 13) && e.ctrlKey) {
         e.preventDefault();
         e.stopPropagation();
         this._sendMessage();
@@ -509,8 +560,11 @@ the License.
         return;
       }
       this._send(msg);
+      this._dispatchGaEvent('Send message');
     }
-    // Handler for the `file-accepted` event sent by the `file-drop` element.
+    /**
+     * Handler for the `file-accepted` event sent by the `file-drop` element.
+     */
     _fileAccepted() {
       this.hasFile = true;
     }
@@ -518,12 +572,14 @@ the License.
      * Send a file message
      */
     _sendFileMessage() {
-      if (!this.file) {
+      const blob = this.file;
+      if (!blob) {
         return;
       }
-      this._send(this.file);
+      this._send(blob);
       this.shadowRoot.querySelector('file-drop').reset();
       this.hasFile = false;
+      this._dispatchGaEvent('Send file');
     }
     /**
      * Sends a message to opened socket.
@@ -532,6 +588,9 @@ the License.
      * @param {String|Blob} data Data to send.
      */
     _send(data) {
+      if (!this.connected) {
+        throw new Error('Socket is not connected.');
+      }
       this.$.socket.message = data;
       this.$.socket.send();
       this.message = '';
@@ -544,15 +603,6 @@ the License.
       } else {
         this.set('messages', [message]);
       }
-      this.dispatchEvent(new CustomEvent('send-analytics', {
-        detail: {
-          type: 'event',
-          category: 'Web sockets',
-          action: 'Send message'
-        },
-        composed: true,
-        bubbles: true
-      }));
     }
     /**
      * Message received handler.
@@ -564,7 +614,11 @@ the License.
         message: e.detail.data,
         direction: 'in'
       });
-      this.push('messages', message);
+      if (this.messages) {
+        this.push('messages', message);
+      } else {
+        this.set('messages', [message]);
+      }
     }
     /**
      * Compute if send button should be visible.
