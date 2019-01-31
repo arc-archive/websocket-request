@@ -1,24 +1,26 @@
-[![Build Status](https://travis-ci.org/advanced-rest-client/websocket-request.svg?branch=stage)](https://travis-ci.org/advanced-rest-client/websocket-request)  
+[![Build Status](https://travis-ci.org/advanced-rest-client/api-url-data-model.svg?branch=stage)](https://travis-ci.org/advanced-rest-client/websocket-request)
+
+[![Published on webcomponents.org](https://img.shields.io/badge/webcomponents.org-published-blue.svg)](https://www.webcomponents.org/element/advanced-rest-client/websocket-request)
 
 # websocket-request
 
-Web socket request panel.
+Web socket request panel
 
-Contains an UI and logic to make a connection to a websocket server and send and receive messages.
-
-### Example
+<!---
 ```
-<websocket-request messages="{{messages}}" connected="{{connected}}"></websocket-request>
+<custom-element-demo>
+  <template>
+    <link rel="import" href="websocket-request.html">
+    <next-code-block></next-code-block>
+  </template>
+</custom-element-demo>
+```
+-->
+
+```html
+<websocket-request></websocket-request>
 ```
 
-### Styling
-`<websocket-request>` provides the following custom properties and mixins for styling:
+### API components
 
-Custom property | Description | Default
-----------------|-------------|----------
-`--websocket-request` | Mixin applied to the element | `{}`
-`--websocket-request-url-input` | Mixin applied to the URL input | `{}`
-`--websocket-request-connection-info` | Mixin applied to the message lable when websocket is connected | `{}`
-`--websocket-request-connected-url-label` | Mixin applied to the URL label when connected | `{}`
-`--websocket-request-file-drop` | Mixin applied to the `<file-drop>` element | `{}`
-
+This components is a part of API components ecosystem: https://elements.advancedrestclient.com/

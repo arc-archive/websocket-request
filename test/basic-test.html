@@ -1,24 +1,10 @@
 <!doctype html>
-<!--
-@license
-Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
-This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
-The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
-The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
-Code distributed by Google as part of the polymer project is also
-subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
--->
 <html>
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
-
-    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+    <script src="../../webcomponentsjs/webcomponents-loader.js"></script>
     <script src="../../web-component-tester/browser.js"></script>
-    <script src="../../iron-test-helpers/test-helpers.js"></script>
-    <script src="../../iron-test-helpers/mock-interactions.js"></script>
-
-    <!-- Step 1: import the element to test -->
     <link rel="import" href="../websocket-request.html">
   </head>
   <body>
@@ -30,13 +16,12 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     </test-fixture>
 
     <script>
-    /* global fixture, assert, TestHelpers */
+    /* global WebSocketMessage */
     suite('basic', function() {
-
-      var element;
-      setup(function() {
+      let element;
+      setup(function(done) {
         element = fixture('basic');
-        TestHelpers.forceXIfStamp(element);
+        flush(() => done());
       });
 
       test('connectDisabled is true', function() {
@@ -53,21 +38,782 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       });
 
       test('urlInput is computed', function(done) {
-        setTimeout(function() {
-          var node = Polymer.dom(element.root).querySelector('#socketUrl');
+        Polymer.RenderStatus.afterNextRender(element, () => {
+          const node = element.shadowRoot.querySelector('#socketUrl');
           assert.isTrue(element.urlInput === node);
           done();
-        }, 20);
+        });
       });
 
       test('Message editor is not in the DOM', function() {
-        var node = Polymer.dom(element.root).querySelector('.message-editor');
+        const node = element.shadowRoot.querySelector('.message-editor');
         assert.notOk(node);
       });
 
       test('Connect button is disabled', function() {
-        var node = Polymer.dom(element.root).querySelector('.connection-info .action-button');
+        const node = element.shadowRoot.querySelector('.connection-info .action-button');
         assert.isTrue(node.disabled);
+      });
+    });
+
+    suite('_onDisconnected()', () => {
+      let element;
+      let ev;
+      setup(function() {
+        element = fixture('basic');
+        ev = new CustomEvent('test', {cancelable: true});
+      });
+
+      test('Stops the event', () => {
+        const spy = sinon.spy(ev, 'stopPropagation');
+        element._onDisconnected(ev);
+        assert.isTrue(spy.called);
+      });
+
+      test('Resets connecting state', () => {
+        element._setConnecting(true);
+        element._onDisconnected(ev);
+        assert.isFalse(element.connected);
+      });
+
+      test('Resets connected state', () => {
+        element._setConnected(true);
+        element._onDisconnected(ev);
+        assert.isFalse(element.connected);
+      });
+    });
+
+    suite('_onConnected()', () => {
+      let element;
+      let ev;
+      setup(function() {
+        element = fixture('basic');
+        ev = new CustomEvent('test', {cancelable: true});
+      });
+
+      test('Stops the event', () => {
+        const spy = sinon.spy(ev, 'stopPropagation');
+        element._onConnected(ev);
+        assert.isTrue(spy.called);
+      });
+
+      test('Resets connecting state', () => {
+        element._setConnecting(true);
+        element._onConnected(ev);
+        assert.isFalse(element.connecting);
+      });
+
+      test('Sets connected state', () => {
+        element._setConnected(false);
+        element._onConnected(ev);
+        assert.isTrue(element.connected);
+      });
+    });
+
+    suite('_urlKeyDown()', () => {
+      let element;
+      let ev;
+      setup(function(done) {
+        element = fixture('basic');
+        ev = new CustomEvent('keydown');
+        flush(() => done());
+      });
+
+      test('Calls connect() when keyCode is 13', () => {
+        const spy = sinon.spy(element, 'connect');
+        ev.keyCode = 13;
+        element._urlKeyDown(ev);
+        assert.isTrue(spy.called);
+      });
+
+      test('Calls connect() when key is Enter', () => {
+        const spy = sinon.spy(element, 'connect');
+        ev.key = 'Enter';
+        element._urlKeyDown(ev);
+        assert.isTrue(spy.called);
+      });
+
+      test('Does nothing for other types', () => {
+        const spy = sinon.spy(element, 'connect');
+        ev.key = 'E';
+        element._urlKeyDown(ev);
+        assert.isFalse(spy.called);
+      });
+    });
+
+    suite('_onError()', () => {
+      let element;
+      let ev;
+      setup(function(done) {
+        element = fixture('basic');
+        ev = new CustomEvent('error', {
+          detail: {
+            error: {}
+          }
+        });
+        flush(() => done());
+      });
+
+      test('Resets connecting state', () => {
+        element._setConnecting(true);
+        element._onError(ev);
+        assert.isFalse(element.connected);
+      });
+
+      test('Opens the error toast', () => {
+        element._onError(ev);
+        assert.isTrue(element.$.error.opened);
+      });
+
+      test('Renders default message', () => {
+        element._onError(ev);
+        assert.equal(element.$.error.text, 'Unknown error occured');
+      });
+
+      test('Renders passed message', () => {
+        ev.detail.error.message = 'test-message';
+        element._onError(ev);
+        assert.equal(element.$.error.text, 'test-message');
+      });
+    });
+
+    suite('connect()', () => {
+      const wss = 'wss://echo.websocket.org';
+      let element;
+      setup(function(done) {
+        element = fixture('basic');
+        flush(() => done());
+      });
+
+      test('Does nothing when suggestions are opened', () => {
+        element.suggesionsOpened = true;
+        element.connect();
+        assert.isUndefined(element.connecting);
+      });
+
+      test('Opens info toast when no URL', () => {
+        element.connect();
+        assert.isTrue(element.$.emptyAddress.opened);
+      });
+
+      test('Sets connecting property', () => {
+        element.url = wss;
+        element.connect();
+        assert.isTrue(element.connecting);
+        element.disconnect();
+      });
+
+      test('Calls _dispatchGaEvent()', () => {
+        element.url = wss;
+        const spy = sinon.spy(element, '_dispatchGaEvent');
+        element.connect();
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], 'Connect to socket');
+        element.disconnect();
+      });
+
+      test('Calls _updateUrlHistory()', () => {
+        element.url = wss;
+        const spy = sinon.spy(element, '_updateUrlHistory');
+        element.connect();
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], wss);
+        element.disconnect();
+      });
+    });
+
+    suite('_dispatch()', () => {
+      const type = 'ev-type';
+      const eventDetail = 'ev-detail';
+      let element;
+      setup(function() {
+        element = fixture('basic');
+      });
+
+      test('Dispatches an event', () => {
+        const spy = sinon.spy();
+        element.addEventListener(type, spy);
+        element._dispatch(type, eventDetail);
+        assert.isTrue(spy.called);
+      });
+
+      test('Returns the event', () => {
+        const result = element._dispatch(type, eventDetail);
+        assert.typeOf(result, 'customevent');
+        assert.equal(result.type, type);
+      });
+
+      test('Event is cancelable', () => {
+        const e = element._dispatch(type, eventDetail);
+        assert.isTrue(e.cancelable);
+      });
+
+      test('Event bubbles', () => {
+        const e = element._dispatch(type, eventDetail);
+        assert.isTrue(e.bubbles);
+      });
+
+      test('Event is composed', () => {
+        const e = element._dispatch(type, eventDetail);
+        if (e.composed !== undefined) { // Edge
+          assert.isTrue(e.composed);
+        }
+      });
+
+      test('Event has detail', () => {
+        const e = element._dispatch(type, eventDetail);
+        assert.equal(e.detail, eventDetail);
+      });
+    });
+
+    suite('_dispatchReadHistory()', () => {
+      const url = 'wss://';
+      let element;
+      setup(function() {
+        element = fixture('basic');
+      });
+
+      test('Calls _dispatch() with type', () => {
+        const spy = sinon.spy(element, '_dispatch');
+        element._dispatchReadHistory(url);
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], 'websocket-url-history-read');
+      });
+
+      test('Detail is set', () => {
+        const spy = sinon.spy(element, '_dispatch');
+        element._dispatchReadHistory(url);
+        assert.isTrue(spy.called);
+        assert.deepEqual(spy.args[0][1], {
+          url
+        });
+      });
+    });
+
+    suite('_dispatchUpdateHistory()', () => {
+      let item;
+      let element;
+      setup(function() {
+        element = fixture('basic');
+        item = {_id: 'wss://'};
+      });
+
+      test('Calls _dispatch() with type', () => {
+        const spy = sinon.spy(element, '_dispatch');
+        element._dispatchUpdateHistory(item);
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], 'websocket-url-history-changed');
+      });
+
+      test('Detail is set', () => {
+        const spy = sinon.spy(element, '_dispatch');
+        element._dispatchUpdateHistory(item);
+        assert.isTrue(spy.called);
+        assert.deepEqual(spy.args[0][1], {
+          item
+        });
+      });
+    });
+
+    suite('_dispatchQueryHistory()', () => {
+      const q = 'wss://';
+      let element;
+      setup(function() {
+        element = fixture('basic');
+      });
+
+      test('Calls _dispatch() with type', () => {
+        const spy = sinon.spy(element, '_dispatch');
+        element._dispatchQueryHistory(q);
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], 'websocket-url-history-query');
+      });
+
+      test('Detail is set', () => {
+        const spy = sinon.spy(element, '_dispatch');
+        element._dispatchQueryHistory(q);
+        assert.isTrue(spy.called);
+        assert.deepEqual(spy.args[0][1], {
+          q
+        });
+      });
+    });
+
+    suite('_dispatchGaEvent()', () => {
+      const action = 'test-action';
+      let element;
+      setup(function() {
+        element = fixture('basic');
+      });
+
+      test('Calls _dispatch() with type', () => {
+        const spy = sinon.spy(element, '_dispatch');
+        element._dispatchGaEvent(action);
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], 'send-analytics');
+      });
+
+      test('Detail is set', () => {
+        const spy = sinon.spy(element, '_dispatch');
+        element._dispatchGaEvent(action);
+        assert.isTrue(spy.called);
+        assert.deepEqual(spy.args[0][1], {
+          type: 'event',
+          category: 'Web sockets',
+          action
+        });
+      });
+    });
+
+    suite('_updateUrlHistory()', () => {
+      const url = 'wss://url';
+      let element;
+      setup(function() {
+        element = fixture('basic');
+      });
+
+      test('Calls _dispatchReadHistory() with argument', () => {
+        const spy = sinon.spy(element, '_dispatchReadHistory');
+        element._updateUrlHistory(url);
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], url);
+      });
+
+      test('Calls _dispatchReadHistory() with argument', () => {
+        const spy = sinon.spy(element, '_dispatchReadHistory');
+        element._updateUrlHistory(url);
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], url);
+      });
+
+      test('Calls _processUrlHistoryUpdateResponse()', () => {
+        const item = {_id: url, cnt: 0};
+        const spy = sinon.spy(element, '_processUrlHistoryUpdateResponse');
+        element.addEventListener('websocket-url-history-read', function f(e) {
+          element.removeEventListener('websocket-url-history-read', f);
+          e.preventDefault();
+          e.detail.result = Promise.resolve(item);
+        });
+        return element._updateUrlHistory(url)
+        .then(() => {
+          assert.isTrue(spy.called);
+          assert.deepEqual(spy.args[0][0], item);
+        });
+      });
+    });
+
+    suite('_processUrlHistoryUpdateResponse()', () => {
+      let element;
+      setup(function() {
+        element = fixture('basic');
+      });
+
+      test('Creates new model', () => {
+        const spy = sinon.spy();
+        const url = 'test-url';
+        element.addEventListener('websocket-url-history-changed', spy);
+        element._processUrlHistoryUpdateResponse(undefined, url);
+        assert.isTrue(spy.called);
+        const e = spy.args[0][0];
+        assert.equal(e.detail.item._id, url);
+        assert.equal(e.detail.item.cnt, 1);
+        assert.typeOf(e.detail.item.time, 'number');
+      });
+
+      test('Updates existing model', () => {
+        const spy = sinon.spy();
+        const doc = {_id: 'some-id', cnt: 1};
+        element.addEventListener('websocket-url-history-changed', spy);
+        element._processUrlHistoryUpdateResponse(doc, 'other-id');
+        assert.isTrue(spy.called);
+        const e = spy.args[0][0];
+        assert.notEqual(e.detail.item._id, 'other-id');
+        assert.equal(e.detail.item.cnt, 2);
+        assert.typeOf(e.detail.item.time, 'number');
+      });
+
+      test('Returns models promise', () => {
+        const doc = {_id: 'some-id', cnt: 1};
+        element.addEventListener('websocket-url-history-changed', function f(e) {
+          element.removeEventListener('websocket-url-history-changed', f);
+          e.preventDefault();
+          e.detail.result = Promise.resolve();
+        });
+        return element._processUrlHistoryUpdateResponse(doc, 'other-id');
+      });
+    });
+
+    suite('_queryUrlHistory()', () => {
+      const url = 'test-url';
+      let element;
+      setup(function(done) {
+        element = fixture('basic');
+        flush(() => done());
+      });
+
+      function handler(e) {
+        e.preventDefault();
+        e.detail.result = Promise.resolve([{_id: url}]);
+      }
+
+      function errorHandler(e) {
+        e.preventDefault();
+        e.detail.result = Promise.reject({});
+      }
+
+      teardown(() => {
+        window.removeEventListener('websocket-url-history-query', handler);
+        window.removeEventListener('websocket-url-history-query', errorHandler);
+      });
+
+      test('Calls _dispatchQueryHistory() with argument', () => {
+        window.addEventListener('websocket-url-history-query', handler);
+        const spy = sinon.spy(element, '_dispatchQueryHistory');
+        element._queryUrlHistory({
+          detail: {
+            value: url
+          }
+        });
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], url);
+      });
+
+      test('Sets suggestions on autocomplete', () => {
+        window.addEventListener('websocket-url-history-query', handler);
+        return element._queryUrlHistory({
+          detail: {
+            value: url
+          }
+        })
+        .then(() => {
+          assert.deepEqual(element.$.autocomplete.source, [url]);
+        });
+      });
+
+      test('Does nothing when event is not handled', () => {
+        element.$.autocomplete.source = [url];
+        return element._queryUrlHistory({
+          detail: {
+            value: url
+          }
+        })
+        .then(() => {
+          assert.deepEqual(element.$.autocomplete.source, [url]);
+        });
+      });
+
+      test('Clears suggestions when model error', () => {
+        window.addEventListener('websocket-url-history-query', errorHandler);
+        element.$.autocomplete.source = [url];
+        return element._queryUrlHistory({
+          detail: {
+            value: url
+          }
+        })
+        .then(() => {
+          assert.deepEqual(element.$.autocomplete.source, []);
+        });
+      });
+    });
+
+    suite('_onSuggestionSelected()', () => {
+      let element;
+      setup(function(done) {
+        element = fixture('basic');
+        flush(() => done());
+      });
+
+      test('Calls connect() in a timeout', (done) => {
+        const spy = sinon.spy(element, 'connect');
+        element._onSuggestionSelected();
+        setTimeout(() => {
+          assert.isTrue(spy.called);
+          done();
+        });
+      });
+    });
+
+    suite('_send()', () => {
+      let element;
+      setup(function(done) {
+        element = fixture('basic');
+        element.$.socket.send = () => {};
+        element._setConnected(true);
+        flush(() => done());
+      });
+
+      test('Throws when not connected', () => {
+        element._setConnected(false);
+        assert.throws(() => {
+          element._send('test');
+        });
+      });
+
+      test('Sets message on the socket', () => {
+        element._send('test');
+        assert.equal(element.$.socket.message, 'test');
+      });
+
+      test('Calls socket send function', () => {
+        const spy = sinon.spy(element.$.socket, 'send');
+        element._send('test');
+        assert.isTrue(spy.called);
+      });
+
+      test('Creates messages array', () => {
+        element._send('test');
+        assert.typeOf(element.messages, 'array');
+        assert.lengthOf(element.messages, 1);
+      });
+
+      test('Appends to messages array', () => {
+        element.messages = [{}];
+        element._send('test');
+        assert.typeOf(element.messages, 'array');
+        assert.lengthOf(element.messages, 2);
+      });
+
+      test('Message is instance of WebSocketMessage', () => {
+        element._send('test');
+        assert.isTrue(element.messages[0] instanceof WebSocketMessage);
+      });
+
+      test('Message direction is "out"', () => {
+        element._send('test');
+        assert.equal(element.messages[0].direction, 'out');
+      });
+
+      test('Message has passed message', () => {
+        element._send('test');
+        assert.equal(element.messages[0].message, 'test');
+      });
+    });
+
+    suite('_messageReceived()', () => {
+      let ev;
+      let element;
+      setup(function(done) {
+        element = fixture('basic');
+        ev = {
+          detail: {
+            data: 'test-data'
+          }
+        };
+        flush(() => done());
+      });
+
+      test('Creates messages array', () => {
+        element._messageReceived(ev);
+        assert.typeOf(element.messages, 'array');
+        assert.lengthOf(element.messages, 1);
+      });
+
+      test('Appends to messages array', () => {
+        element.messages = [{}];
+        element._messageReceived(ev);
+        assert.typeOf(element.messages, 'array');
+        assert.lengthOf(element.messages, 2);
+      });
+
+      test('Message is instance of WebSocketMessage', () => {
+        element._messageReceived(ev);
+        assert.isTrue(element.messages[0] instanceof WebSocketMessage);
+      });
+
+      test('Message direction is "in"', () => {
+        element._messageReceived(ev);
+        assert.equal(element.messages[0].direction, 'in');
+      });
+
+      test('Message has passed message', () => {
+        element._messageReceived(ev);
+        assert.equal(element.messages[0].message, 'test-data');
+      });
+    });
+
+    suite('_sendMessage()', () => {
+      let element;
+      setup(function(done) {
+        element = fixture('basic');
+        element.$.socket.send = () => {};
+        element._setConnected(true);
+        flush(() => done());
+      });
+
+      test('Calls _send() with the argument', () => {
+        const spy = sinon.spy(element, '_send');
+        element.message = 'test-msg';
+        element._sendMessage();
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], 'test-msg');
+      });
+
+      test('Ignores action when no message', () => {
+        const spy = sinon.spy(element, '_send');
+        element.message = '';
+        element._sendMessage();
+        assert.isFalse(spy.called);
+      });
+
+      test('Calls _dispatchGaEvent() with argument', () => {
+        const spy = sinon.spy(element, '_dispatchGaEvent');
+        element._sendMessage();
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], 'Send message');
+      });
+    });
+
+    suite('_fileAccepted()', () => {
+      test('Sets hasFile', () => {
+        const element = fixture('basic');
+        element._fileAccepted();
+        assert.isTrue(element.hasFile);
+      });
+    });
+
+    suite('_sendFileMessage()', () => {
+      let element;
+      setup(function(done) {
+        element = fixture('basic');
+        element.$.socket.send = () => {};
+        element._setConnected(true);
+        element.file = new Blob(['test']);
+        flush(() => done());
+      });
+
+      test('Calls _send() with argument', () => {
+        const spy = sinon.spy(element, '_send');
+        element._sendFileMessage();
+        assert.isTrue(spy.called);
+        assert.typeOf(spy.args[0][0], 'blob');
+      });
+
+      test('Ignores the call when no file', () => {
+        const spy = sinon.spy(element, '_send');
+        element.file = undefined;
+        element._sendFileMessage();
+        assert.isFalse(spy.called);
+      });
+
+      test('Restes hasFile', () => {
+        element._sendFileMessage();
+        assert.isFalse(element.hasFile);
+      });
+
+      test('Calls _dispatchGaEvent() with argument', () => {
+        const spy = sinon.spy(element, '_dispatchGaEvent');
+        element._sendFileMessage();
+        assert.isTrue(spy.called);
+        assert.equal(spy.args[0][0], 'Send file');
+      });
+    });
+
+    suite('_messageKeydown()', () => {
+      let element;
+      let ev;
+      setup(function(done) {
+        element = fixture('basic');
+        element.$.socket.send = () => {};
+        element._setConnected(true);
+        ev = new CustomEvent('keydown');
+        ev.ctrlKey = true;
+        flush(() => done());
+      });
+
+      test('Calls _sendMessage() when keyCode is 13', () => {
+        const spy = sinon.spy(element, '_sendMessage');
+        ev.keyCode = 13;
+        element._messageKeydown(ev);
+        assert.isTrue(spy.called);
+      });
+
+      test('Calls _sendMessage() when key is Enter', () => {
+        const spy = sinon.spy(element, '_sendMessage');
+        ev.key = 'Enter';
+        element._messageKeydown(ev);
+        assert.isTrue(spy.called);
+      });
+
+      test('Ignores event when no ctrlKey', () => {
+        const spy = sinon.spy(element, '_sendMessage');
+        ev.key = 'Enter';
+        ev.ctrlKey = false;
+        element._messageKeydown(ev);
+        assert.isFalse(spy.called);
+      });
+
+      test('Ignores event when other key', () => {
+        const spy = sinon.spy(element, '_sendMessage');
+        ev.key = 'S';
+        element._messageKeydown(ev);
+        assert.isFalse(spy.called);
+      });
+    });
+
+    suite('WebSocketMessage', () => {
+      suite('constructor()', () => {
+        test('Sets message value', () => {
+          const instance = new WebSocketMessage({
+            message: 'test'
+          });
+          assert.equal(instance.message, 'test');
+        });
+
+        test('Sets empty message', () => {
+          const instance = new WebSocketMessage({
+            message: ''
+          });
+          assert.equal(instance.message, '(empty message)');
+        });
+
+        test('Sets isBinary to false when message is string', () => {
+          const instance = new WebSocketMessage({
+            message: 'test'
+          });
+          assert.isFalse(instance.isBinary);
+        });
+
+        test('Sets isBinary to true when message is Blob', () => {
+          const instance = new WebSocketMessage({
+            message: new Blob(['test'])
+          });
+          assert.isTrue(instance.isBinary);
+        });
+
+        test('Sets isBinary to true when message is ArrayBuffer', () => {
+          const instance = new WebSocketMessage({
+            message: new ArrayBuffer(8)
+          });
+          assert.isTrue(instance.isBinary);
+        });
+
+        test('Sets default time', () => {
+          const instance = new WebSocketMessage({});
+          assert.typeOf(instance.time, 'date');
+        });
+
+        test('Sets default time', () => {
+          const instance = new WebSocketMessage({});
+          assert.typeOf(instance.time, 'date');
+        });
+
+        test('Sets time from Date object', () => {
+          const d = new Date();
+          d.setMinutes(d.getMinutes() + 1);
+          const instance = new WebSocketMessage({
+            time: d
+          });
+          assert.equal(instance.time.getTime(), d.getTime());
+        });
+
+        test('Sets time from time', () => {
+          const d = new Date();
+          d.setMinutes(d.getMinutes() + 1);
+          const instance = new WebSocketMessage({
+            time: d.getTime()
+          });
+          assert.equal(instance.time.getTime(), d.getTime());
+        });
       });
     });
     </script>
