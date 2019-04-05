@@ -5,27 +5,14 @@
  *   https://github.com/Polymer/tools/tree/master/packages/gen-typescript-declarations
  *
  * To modify these typings, edit the source file(s):
- *   websocket-request.html
+ *   websocket-request.js
  */
 
 
 // tslint:disable:variable-name Describing an API that's defined elsewhere.
 // tslint:disable:no-any describes the API as best we are able today
 
-/// <reference path="../polymer/types/polymer-element.d.ts" />
-/// <reference path="../polymer/types/lib/utils/render-status.d.ts" />
-/// <reference path="../web-socket/web-socket.d.ts" />
-/// <reference path="../paper-input/paper-input.d.ts" />
-/// <reference path="../paper-input/paper-textarea.d.ts" />
-/// <reference path="../paper-button/paper-button.d.ts" />
-/// <reference path="../paper-checkbox/paper-checkbox.d.ts" />
-/// <reference path="../paper-progress/paper-progress.d.ts" />
-/// <reference path="../paper-tabs/paper-tabs.d.ts" />
-/// <reference path="../paper-tabs/paper-tab.d.ts" />
-/// <reference path="../paper-toast/paper-toast.d.ts" />
-/// <reference path="../iron-pages/iron-pages.d.ts" />
-/// <reference path="../file-drop/file-drop.d.ts" />
-/// <reference path="../paper-autocomplete/paper-autocomplete.d.ts" />
+export {WebSocketMessage};
 
 /**
  * A model for a single socket message.
@@ -41,6 +28,8 @@ declare class WebSocketMessage {
   constructor(opts: object|null);
   toJSON(): any;
 }
+
+export {WebsocketRequest};
 
 declare namespace ApiElements {
 
@@ -76,7 +65,7 @@ declare namespace ApiElements {
    * `--websocket-request-connected-url-label` | Mixin applied to the URL label when connected | `{}`
    * `--websocket-request-file-drop` | Mixin applied to the `<file-drop>` element | `{}`
    */
-  class WebsocketRequest extends Polymer.Element {
+  class WebsocketRequest extends PolymerElement {
 
     /**
      * Remote URL to connect to
@@ -297,6 +286,9 @@ declare namespace ApiElements {
   }
 }
 
-interface HTMLElementTagNameMap {
-  "websocket-request": ApiElements.WebsocketRequest;
+declare global {
+
+  interface HTMLElementTagNameMap {
+    "websocket-request": ApiElements.WebsocketRequest;
+  }
 }
