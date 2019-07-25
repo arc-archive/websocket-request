@@ -30,7 +30,7 @@
   "dependencies": {
     "@advanced-rest-client/arc-models": "^3.0.0-preview.6",
     "@advanced-rest-client/file-drop": "^3.0.0",
-    "@advanced-rest-client/paper-autocomplete": "^3.0.0",
+    "@advanced-rest-client/paper-autocomplete": "^3.1.0",
     "@advanced-rest-client/web-socket": "^3.0.1",
     "@polymer/paper-button": "^3.0.0",
     "@polymer/paper-checkbox": "^3.0.0",
