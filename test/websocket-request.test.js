@@ -664,7 +664,9 @@ describe('<websocket-request>', () => {
   describe('a11y', () => {
     it('passes accessibility test', async () => {
       const el = await fixture(html`<websocket-request></websocket-request>`);
-      await assert.isAccessible(el);
+      await assert.isAccessible(el, {
+        ignoredRules: ['tabindex']
+      });
     });
   });
 });
