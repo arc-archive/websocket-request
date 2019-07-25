@@ -368,7 +368,7 @@ describe('<websocket-request>', () => {
       setTimeout(() => {
         assert.isTrue(spy.called);
         done();
-      });
+      }, 1);
     });
   });
 
