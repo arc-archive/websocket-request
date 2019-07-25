@@ -30,3 +30,12 @@
 
 
 
+# 3.0.0 (2019-07-25)
+
+
+### Bug Fixes
+
+* fixing tests by removing safari ([d78a071](https://github.com/advanced-rest-client/websocket-request/commit/d78a071))
+
+
+
