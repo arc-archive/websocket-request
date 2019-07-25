@@ -238,6 +238,8 @@ export class WebsocketRequest extends LitElement {
           <paper-input
           id="socketUrl"
           label="Socket URL"
+          title="Enter socket URL, it usually starts with ws:// or wss://"
+          role="textbox"
           .value="${url}"
           @keydown="${this._urlKeyDown}"
           @input="${this._urlInputHandler}"
