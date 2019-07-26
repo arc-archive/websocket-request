@@ -364,11 +364,15 @@ describe('<websocket-request>', () => {
 
     it('Calls connect() in a timeout', (done) => {
       const spy = sinon.spy(element, 'connect');
-      element._onSuggestionSelected();
+      element._onSuggestionSelected({
+        target: {
+          selected: 'wss://echo.websocket.org'
+        }
+      });
       setTimeout(() => {
         assert.isTrue(spy.called);
         done();
-      }, 1);
+      });
     });
   });
 

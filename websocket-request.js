@@ -152,6 +152,10 @@ export class WebsocketRequest extends LitElement {
       line-height: var(--arc-font-body1-line-height, inherit);
     }
 
+    [hidden] {
+      display: none !important;
+    }
+
     .connection-info,
     .connection-input {
       display: flex;
@@ -228,14 +232,13 @@ export class WebsocketRequest extends LitElement {
   render() {
     const { connected, connecting, retrying, url, _connectDisabled, autoReconnect, _urlInput, selectedTab } = this;
     return html`<div class="connection-status">
+      ${connected ? html`<div class="connection-info">
+        <p>Connected to <b>${url}</b></p>
+        <paper-button @click="${this.disconnect}" raised>Disconnect</paper-button>
+      <div>` : undefined}
 
-      ${connected ?
-        html`<div class="connection-info">
-          <p>Connected to <b>${url}</b></p>
-          <paper-button @click="${this.disconnect}" raised>Disconnect</paper-button>
-        <div>` :
-        html`<div class="connection-input">
-          <paper-input
+      <div class="connection-input" ?hidden="${connected}">
+        <paper-input
           id="socketUrl"
           label="Socket URL"
           title="Enter socket URL, it usually starts with ws:// or wss://"
@@ -247,7 +250,6 @@ export class WebsocketRequest extends LitElement {
         <paper-button raised class="action-button"
           ?disabled="${_connectDisabled}"
           @click="${this.connect}">Connect</paper-button>
-        </div>`}
       </div>
       <paper-checkbox
         .checked="${autoReconnect}"
@@ -280,15 +282,15 @@ export class WebsocketRequest extends LitElement {
       @error="${this._onError}"
       @retrying-changed="${this._retryingHandler}"></web-socket>
     <paper-autocomplete
-      vertical-offset="24"
-      horizontal-offset="24"
+      verticaloffset="24"
+      horizontaloffset="24"
       .target="${_urlInput}"
       id="autocomplete"
       loader
-      open-on-focus
+      openonfocus
       @query="${this._queryUrlHistoryHandler}"
       @selected="${this._onSuggestionSelected}"
-      @opened-chnaged="${this._sugesstionsOpenedHandler}"></paper-autocomplete>
+      @opened-changed="${this._sugesstionsOpenedHandler}"></paper-autocomplete>
     <websocket-url-history-model></websocket-url-history-model>
     <paper-toast text="Enter remote address first. Eg. ws://echo.websocket.org" id="emptyAddress"></paper-toast>
     <paper-toast duration="7000" id="error"></paper-toast>`;
@@ -640,9 +642,13 @@ export class WebsocketRequest extends LitElement {
       this._autocomplete.source = [];
     }
   }
-  // Connects to the server when URL suggestion has been selected.
-  _onSuggestionSelected() {
-    setTimeout(() => this.connect(), 1);
+  /**
+   * Connects to the server when URL suggestion has been selected.
+   * @param {CustomEvent} e
+   */
+  _onSuggestionSelected(e) {
+    this.url = e.target.selected;
+    setTimeout(() => this.connect());
   }
   /**
    * Sends the message to the server when the user pressed ctrl + enter
