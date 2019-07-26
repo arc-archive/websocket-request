@@ -39,3 +39,13 @@
 
 
 
+## 3.0.1 (2019-07-26)
+
+
+### Bug Fixes
+
+* fixing integration with autocomplete element ([1af66c8](https://github.com/advanced-rest-client/websocket-request/commit/1af66c8))
+* fixing tests by removing safari ([d78a071](https://github.com/advanced-rest-client/websocket-request/commit/d78a071))
+
+
+
