@@ -13,16 +13,16 @@ the License.
 */
 import { LitElement, html, css } from 'lit-element';
 import '@advanced-rest-client/web-socket/web-socket.js';
-import '@polymer/paper-input/paper-input.js';
-import '@polymer/paper-input/paper-textarea.js';
-import '@polymer/paper-button/paper-button.js';
-import '@polymer/paper-checkbox/paper-checkbox.js';
+import '@anypoint-web-components/anypoint-autocomplete/anypoint-autocomplete.js';
+import '@anypoint-web-components/anypoint-input/anypoint-input.js';
+import '@anypoint-web-components/anypoint-input/anypoint-textarea.js';
+import '@anypoint-web-components/anypoint-button/anypoint-button.js';
+import '@anypoint-web-components/anypoint-checkbox/anypoint-checkbox.js';
+import '@anypoint-web-components/anypoint-tabs/anypoint-tabs.js';
+import '@anypoint-web-components/anypoint-tabs/anypoint-tab.js';
 import '@polymer/paper-progress/paper-progress.js';
-import '@polymer/paper-tabs/paper-tabs.js';
-import '@polymer/paper-tabs/paper-tab.js';
 import '@polymer/paper-toast/paper-toast.js';
 import '@advanced-rest-client/file-drop/file-drop.js';
-import '@advanced-rest-client/paper-autocomplete/paper-autocomplete.js';
 import '@advanced-rest-client/arc-models/websocket-url-history-model.js';
 /**
  * A model for a single socket message.
@@ -59,7 +59,6 @@ export class WebSocketMessage {
   }
 
   set message(msg) {
-    /* global ArrayBuffer */
     if ((msg instanceof Blob) || (msg instanceof ArrayBuffer)) {
       this.isBinary = true;
     } else {
@@ -200,30 +199,6 @@ export class WebsocketRequest extends LitElement {
       margin-bottom: 8px;
     }
 
-    .action-button {
-      height: 40px;
-      background-color: var(--action-button-background-color);
-      background-image: var(--action-button-background-image);
-      color: var(--action-button-color);
-      transition: var(--action-button-transition);
-    }
-
-    .action-button:not([disabled]):hover {
-      background-color: var(--action-button-hover-background-color);
-      color: var(--action-button-hover-color);
-    }
-
-    .action-button[disabled] {
-      background: var(--action-button-disabled-background-color);
-      color: var(--action-button-disabled-color);
-      cursor: auto;
-      pointer-events: none;
-    }
-
-    paper-autocomplete {
-      bottom: 0;
-    }
-
     .send-file {
       margin: 20px;
     }`;
@@ -234,26 +209,29 @@ export class WebsocketRequest extends LitElement {
     return html`<div class="connection-status">
       ${connected ? html`<div class="connection-info">
         <p>Connected to <b>${url}</b></p>
-        <paper-button @click="${this.disconnect}" raised>Disconnect</paper-button>
+        <anypoint-button @click="${this.disconnect}" emphasis="high">Disconnect</anypoint-button>
       <div>` : undefined}
 
       <div class="connection-input" ?hidden="${connected}">
-        <paper-input
+        <anypoint-input
           id="socketUrl"
-          label="Socket URL"
           title="Enter socket URL, it usually starts with ws:// or wss://"
           role="textbox"
           .value="${url}"
           @keydown="${this._urlKeyDown}"
           @input="${this._urlInputHandler}"
-          class="url-input"></paper-input>
-        <paper-button raised class="action-button"
+          class="url-input">
+          <label slot="label">Socket URL</label>
+        </anypoint-input>
+        <anypoint-button
+          emphasis="high"
+          class="action-button"
           ?disabled="${_connectDisabled}"
-          @click="${this.connect}">Connect</paper-button>
+          @click="${this.connect}">Connect</anypoint-button>
       </div>
-      <paper-checkbox
+      <anypoint-checkbox
         .checked="${autoReconnect}"
-        @checked-changed="${this._autoReconnectHandler}">Reconnect automatically</paper-checkbox>
+        @checked-changed="${this._autoReconnectHandler}">Reconnect automatically</anypoint-checkbox>
     </div>
 
     ${connecting ? html`<div class="connecting-info">
@@ -265,10 +243,10 @@ export class WebsocketRequest extends LitElement {
     <p>Trying to reconnect.</p>` : undefined}
 
     ${connected ? html`<div class="message-editor">
-      <paper-tabs .selected="${selectedTab}" @selected-changed="${this._tabChanged}">
-        <paper-tab>Text</paper-tab>
-        <paper-tab>File</paper-tab>
-      </paper-tabs>
+      <anypoint-tabs .selected="${selectedTab}" @selected-changed="${this._tabChanged}">
+        <anypoint-tab>Text</anypoint-tab>
+        <anypoint-tab>File</anypoint-tab>
+      </anypoint-tabs>
       ${this._renderPageTemplate()}
     </div>` : undefined}
 
@@ -281,16 +259,15 @@ export class WebsocketRequest extends LitElement {
       @connected="${this._onConnected}"
       @error="${this._onError}"
       @retrying-changed="${this._retryingHandler}"></web-socket>
-    <paper-autocomplete
-      verticaloffset="24"
-      horizontaloffset="24"
+    <anypoint-autocomplete
+
       .target="${_urlInput}"
       id="autocomplete"
       loader
       openonfocus
       @query="${this._queryUrlHistoryHandler}"
       @selected="${this._onSuggestionSelected}"
-      @opened-changed="${this._sugesstionsOpenedHandler}"></paper-autocomplete>
+      @opened-changed="${this._sugesstionsOpenedHandler}"></anypoint-autocomplete>
     <websocket-url-history-model></websocket-url-history-model>
     <paper-toast text="Enter remote address first. Eg. ws://echo.websocket.org" id="emptyAddress"></paper-toast>
     <paper-toast duration="7000" id="error"></paper-toast>`;
@@ -300,24 +277,25 @@ export class WebsocketRequest extends LitElement {
     const { _messageSendEnabled, message, hasFile, selectedTab } = this;
     switch (selectedTab) {
       case 0: return html`<section>
-        <paper-textarea
-          label="Message to send"
+        <anypoint-textarea
           .value="${message}"
           @input="${this._messageInputHandler}"
-          @keydown="${this._messageKeydown}"></paper-textarea>
-        <paper-button
-          raised
+          @keydown="${this._messageKeydown}">
+          <label slot="label">Message to send</label>
+        </anypoint-textarea>
+        <anypoint-button
+          emphasis="high"
           class="action-button"
           @click="${this._sendMessage}"
-          ?disabled="${!_messageSendEnabled}">send</paper-button>
+          ?disabled="${!_messageSendEnabled}">send</anypoint-button>
       </section>`;
       case 1: return html`<section>
         <file-drop @change="${this._fileAccepted}"></file-drop>
-        <paper-button
-          raised
+        <anypoint-button
+          emphasis="high"
           class="action-button send-file"
           @click="${this._sendFileMessage}"
-          ?disabled="${!hasFile}">send</paper-button>
+          ?disabled="${!hasFile}">send</anypoint-button>
       </section>`;
     }
   }
@@ -476,7 +454,7 @@ export class WebsocketRequest extends LitElement {
   }
 
   get _autocomplete() {
-    return this.shadowRoot.querySelector('paper-autocomplete');
+    return this.shadowRoot.querySelector('anypoint-autocomplete');
   }
 
   get _model() {
@@ -620,7 +598,7 @@ export class WebsocketRequest extends LitElement {
     await model.update(doc);
   }
   /**
-   * Handler for `query` event of `paper-autocomplete`.
+   * Handler for `query` event of `anypoint-autocomplete`.
    * @param {CustomEvent} e Suggestion request event from autocomplete
    */
   _queryUrlHistoryHandler(e) {
@@ -646,8 +624,7 @@ export class WebsocketRequest extends LitElement {
    * Connects to the server when URL suggestion has been selected.
    * @param {CustomEvent} e
    */
-  _onSuggestionSelected(e) {
-    this.url = e.target.selected;
+  _onSuggestionSelected() {
     setTimeout(() => this.connect());
   }
   /**
