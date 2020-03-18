@@ -1,7 +1,7 @@
 {
   "name": "@advanced-rest-client/websocket-request",
   "description": "Web socket request panel for Advanced REST Client",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "license": "Apache-2.0",
   "main": "websocket-request.js",
   "keywords": [
