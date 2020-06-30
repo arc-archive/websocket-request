@@ -1,44 +1,45 @@
 import { fixture, assert, nextFrame, aTimeout, html } from '@open-wc/testing';
-import sinon from 'sinon/pkg/sinon-esm.js';
-import { WebSocketMessage } from '../websocket-request.js';
+import sinon from 'sinon';
+import { WebSocketMessage } from '../index.js';
+import '../websocket-request.js';
 
 describe('<websocket-request>', () => {
   async function basicFixture() {
-    return (await fixture(`<websocket-request></websocket-request>`));
+    return fixture(`<websocket-request></websocket-request>`);
   }
 
-  describe('basic', function() {
+  describe('basic', () => {
     let element;
     beforeEach(async () => {
       element = await basicFixture();
       await nextFrame();
     });
 
-    it('_connectDisabled is true', function() {
+    it('_connectDisabled is true', () => {
       assert.isTrue(element._connectDisabled);
     });
 
-    it('_connectDisabled is false when URL is set', function() {
+    it('_connectDisabled is false when URL is set', () => {
       element.url = 'wss://echo.websocket.org';
       assert.isFalse(element._connectDisabled);
     });
 
-    it('Default tab is 0', function() {
+    it('Default tab is 0', () => {
       assert.equal(element.selectedTab, 0);
     });
 
     it('_urlInput is computed', async () => {
-      await aTimeout();
+      await aTimeout(0);
       const node = element.shadowRoot.querySelector('#socketUrl');
       assert.isTrue(element._urlInput === node);
     });
 
-    it('Message editor is not in the DOM', function() {
+    it('Message editor is not in the DOM', () => {
       const node = element.shadowRoot.querySelector('.message-editor');
       assert.notOk(node);
     });
 
-    it('Connect button is disabled', function() {
+    it('Connect button is disabled', () => {
       const node = element.shadowRoot.querySelector('.connection-input .action-button');
       assert.isTrue(node.disabled);
     });
@@ -335,7 +336,6 @@ describe('<websocket-request>', () => {
 
     it('Sets suggestions on autocomplete', async () => {
       element._model.list = () => {
-        /* global Promise */
         return Promise.resolve([{
           _id: url
         }]);
@@ -563,6 +563,7 @@ describe('<websocket-request>', () => {
       element._socket.send = () => {};
       element._connected = true;
       ev = new CustomEvent('keydown');
+      // @ts-ignore
       ev.ctrlKey = true;
       await nextFrame();
     });
@@ -600,13 +601,15 @@ describe('<websocket-request>', () => {
   describe('WebSocketMessage', () => {
     describe('constructor()', () => {
       it('Sets message value', () => {
+        // @ts-ignore
         const instance = new WebSocketMessage({
-          message: 'test'
+          message: 'test',
         });
         assert.equal(instance.message, 'test');
       });
 
       it('Sets empty message', () => {
+        // @ts-ignore
         const instance = new WebSocketMessage({
           message: ''
         });
@@ -614,6 +617,7 @@ describe('<websocket-request>', () => {
       });
 
       it('Sets isBinary to false when message is string', () => {
+        // @ts-ignore
         const instance = new WebSocketMessage({
           message: 'test'
         });
@@ -621,6 +625,7 @@ describe('<websocket-request>', () => {
       });
 
       it('Sets isBinary to true when message is Blob', () => {
+        // @ts-ignore
         const instance = new WebSocketMessage({
           message: new Blob(['test'])
         });
@@ -628,7 +633,7 @@ describe('<websocket-request>', () => {
       });
 
       it('Sets isBinary to true when message is ArrayBuffer', () => {
-        /* global ArrayBuffer */
+        // @ts-ignore
         const instance = new WebSocketMessage({
           message: new ArrayBuffer(8)
         });
@@ -636,11 +641,13 @@ describe('<websocket-request>', () => {
       });
 
       it('Sets default time', () => {
+        // @ts-ignore
         const instance = new WebSocketMessage({});
         assert.typeOf(instance.time, 'date');
       });
 
       it('Sets default time', () => {
+        // @ts-ignore
         const instance = new WebSocketMessage({});
         assert.typeOf(instance.time, 'date');
       });
@@ -648,6 +655,7 @@ describe('<websocket-request>', () => {
       it('Sets time from Date object', () => {
         const d = new Date();
         d.setMinutes(d.getMinutes() + 1);
+        // @ts-ignore
         const instance = new WebSocketMessage({
           time: d
         });
@@ -658,6 +666,7 @@ describe('<websocket-request>', () => {
         const d = new Date();
         d.setMinutes(d.getMinutes() + 1);
         const instance = new WebSocketMessage({
+          // @ts-ignore
           time: d.getTime()
         });
         assert.equal(instance.time.getTime(), d.getTime());

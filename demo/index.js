@@ -1,8 +1,9 @@
 import '@advanced-rest-client/arc-demo-helper/arc-demo-helper.js';
-import '@polymer/paper-toggle-button/paper-toggle-button.js';
+import '@anypoint-web-components/anypoint-switch/anypoint-switch.js';
 import '../websocket-request.js';
 
 document.getElementById('theme').addEventListener('change', (e) => {
+  // @ts-ignore
   if (e.target.checked) {
     document.body.classList.add('dark');
   } else {
@@ -10,6 +11,7 @@ document.getElementById('theme').addEventListener('change', (e) => {
   }
 });
 document.getElementById('styled').addEventListener('change', (e) => {
+  // @ts-ignore
   if (e.target.checked) {
     document.body.classList.add('styled');
   } else {
@@ -18,6 +20,7 @@ document.getElementById('styled').addEventListener('change', (e) => {
 });
 document.getElementById('narrow').addEventListener('change', (e) => {
   const node = document.querySelector('websocket-request');
+  // @ts-ignore
   if (e.target.checked) {
     node.setAttribute('narrow', '');
   } else {
