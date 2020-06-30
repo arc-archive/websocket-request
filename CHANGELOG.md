@@ -102,3 +102,37 @@
  [28274dc](https://github.com/advanced-rest-client/websocket-request/commit/28274dcc9f924f3f198d3b729163d2dc9c488c5a) by Pawel Psztyc
 
 
+<a name="3.1.0"></a>
+## [3.1.0](https://github.com/advanced-rest-client/websocket-request/compare/3.0.1...3.1.0) (2020-06-30)
+
+### Build
+
+* bumping version [7441e2a](https://github.com/advanced-rest-client/websocket-request/commit/7441e2a6f2a4aec67f3aacdce2548d2632460c27) by Pawel
+* bumping version [b557058](https://github.com/advanced-rest-client/websocket-request/commit/b55705801d34897b169fef2ce2119c1a949e1c39) by Pawel
+
+
+### Continuous integration
+
+* updating Travis configuration [9dbc0db](https://github.com/advanced-rest-client/websocket-request/commit/9dbc0db6f1a12c3f28ee8f0bed9603889933a0a9) by Pawel
+
+
+### Update
+
+* adding types support [d1171dc](https://github.com/advanced-rest-client/websocket-request/commit/d1171dc072a7f873e13daa731f9f675b7a70a060) by Pawel
+* [ci skip] automated merge master->stage. syncing main branches [c3ba62c](https://github.com/advanced-rest-client/websocket-request/commit/c3ba62c7a1a5f31bbb1e01d30448c932f6775d7b) by Ci agent
+* removing git add from lint-staged config [0b813f3](https://github.com/advanced-rest-client/websocket-request/commit/0b813f3740f3f9d719a7140090cfb944728a790a) by Pawel
+* upgrading dependencies [8d8e03e](https://github.com/advanced-rest-client/websocket-request/commit/8d8e03e6b081a91b956f2d9087ddda27a139d42d) by Pawel
+* upgrading depndencies [b85b38a](https://github.com/advanced-rest-client/websocket-request/commit/b85b38a65212d77031b7e40269ccad91093a831f) by Pawel Psztyc
+
+
+### Refactor
+
+* replacing polymer with anypoint components [b81e6a1](https://github.com/advanced-rest-client/websocket-request/commit/b81e6a183fa52785c2c0ab296244acb022e4d2b8) by Pawel
+
+
+### Testing
+
+* upgrading SauceLabs configuration [78ebad4](https://github.com/advanced-rest-client/websocket-request/commit/78ebad44a70743c3de9e228a006a831a1f0b47f2) by Pawel
+* removing compatibility tests [75d882c](https://github.com/advanced-rest-client/websocket-request/commit/75d882c5e58988c04c0ba23615b0625012d4f89c) by Pawel
+
+
